@@ -8,6 +8,7 @@ public class Main {
         String[][] initialState;
         if (args.length > 0 && args[0].equals("--example")) {
             initialState = getExampleState();
+            System.out.println("Используется пример из ТЗ:");
             printState(initialState);
         } else {
             initialState = readStateFromInput();
@@ -15,8 +16,8 @@ public class Main {
 
         LiquidSortSolver solver = new LiquidSortSolver(initialState);
         List<Move> solution = solver.solve();
-        if (solver.isSolved()) {
-            System.out.println("\nРешение найдено за " + solution.size() + " ходов:");
+        if (!solution.isEmpty()) {
+            System.out.println("\nРешение найдено за " + solution.size() + " хода(ов):");
             printSolution(solution);
         } else {
             System.out.println("\nРешение не найдено.");
@@ -70,7 +71,7 @@ public class Main {
 
     private static void printState(String[][] state) {
         for (int i = 0; i < state.length; i++) {
-            System.out.print(i + ": [");
+            System.out.print("Пробирка " + i + ": [");
             for (int j = 0; j < state[i].length; j++) {
                 if (state[i][j] == null || state[i][j].equals("0") || state[i][j].trim().isEmpty()) {
                     System.out.print(" ");
@@ -101,7 +102,7 @@ public class Main {
         List<Tube> tubes = solver.getTubes();
         for (int i = 0; i < tubes.size(); i++) {
             Tube tube = tubes.get(i);
-            System.out.print(i + ": [");
+            System.out.print("Пробирка " + i + ": [");
             List<String> drops = tube.getDrops();
             for (int j = 0; j < drops.size(); j++) {
                 System.out.print(drops.get(j));

@@ -17,14 +17,6 @@ public class Tube {
         this.drops = new ArrayList<>(initialDrops);
     }
 
-    public int getCapacity() {
-        return capacity;
-    }
-
-    public int getSize() {
-        return drops.size();
-    }
-
     public boolean isEmpty() {
         return drops.isEmpty();
     }
@@ -109,10 +101,6 @@ public class Tube {
             }
         }
         return true;
-    }
-
-    public Tube copy() {
-        return new Tube(capacity, new ArrayList<>(drops));
     }
 
 

@@ -1,8 +1,10 @@
 package org.example.liquidsort;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.PriorityQueue;
 import java.util.Set;
 
 public class LiquidSortSolver {
@@ -10,14 +12,12 @@ public class LiquidSortSolver {
     private List<Move> solution;
     private final int numTubes;
     private final int tubeCapacity;
-    private static final int MAX_MOVES = 10000;
 
     public LiquidSortSolver(String[][] initialState) {
         this.numTubes = initialState.length;
         this.tubeCapacity = initialState[0].length;
         this.tubes = new ArrayList<>();
         this.solution = new ArrayList<>();
-
 
         for (String[] tubeData : initialState) {
             Tube tube = new Tube(tubeCapacity);
@@ -37,78 +37,102 @@ public class LiquidSortSolver {
         if (isSolved()) {
             return solution;
         }
-        int movesCount = 0;
+
+        PriorityQueue<StateNode> queue = new PriorityQueue<>(Comparator.comparingInt(n -> n.fCost));
         Set<String> visitedStates = new HashSet<>();
         
-        while (!isSolved() && movesCount < MAX_MOVES) {
-            Move bestMove = findBestMove(visitedStates);
-            if (bestMove == null) {
-                break;
+        int initialHCost = calculateHeuristic(this);
+        StateNode initialNode = new StateNode(this.copy(), new ArrayList<>(), 0, initialHCost);
+        queue.offer(initialNode);
+        visitedStates.add(this.getStateKey());
+        
+        int maxDepth = 200;
+        int nodesProcessed = 0;
+        int maxNodes = 1000000;
+        while (!queue.isEmpty() && nodesProcessed < maxNodes) {
+            StateNode current = queue.poll();
+            if (current == null) break;
+            
+            nodesProcessed++;
+            
+            if (current.state.isSolved()) {
+                solution = current.path;
+                return solution;
             }
-            makeMove(bestMove.getFromTube(), bestMove.getToTube());
-            movesCount++;
-            String stateKey = getStateKey();
-            visitedStates.add(stateKey);
+            
+            if (current.path.size() >= maxDepth) {
+                continue;
+            }
+            
+            List<Move> validMoves = current.state.getAllValidMoves();
+            for (Move move : validMoves) {
+                LiquidSortSolver nextState = current.state.copy();
+                nextState.makeMove(move.getFromTube(), move.getToTube());
+                
+                String stateKey = nextState.getStateKey();
+                if (!visitedStates.contains(stateKey)) {
+                    visitedStates.add(stateKey);
+                    List<Move> newPath = new ArrayList<>(current.path);
+                    newPath.add(move);
+                    int newGCost = current.gCost + 1;
+                    int newHCost = calculateHeuristic(nextState);
+                    queue.offer(new StateNode(nextState, newPath, newGCost, newHCost));
+                }
+            }
         }
         return solution;
     }
 
-    private Move findBestMove(Set<String> visitedStates) {
-        Move bestMove = null;
-        int bestScore = Integer.MIN_VALUE;
+    private int calculateHeuristic(LiquidSortSolver state) {
+        int heuristic = 0;
+        List<Tube> tubes = state.getTubes();
+        for (Tube tube : tubes) {
+            if (tube.isEmpty() || tube.isSorted()) {
+                continue;
+            }
+            List<String> drops = tube.getDrops();
+            String firstColor = drops.get(0);
+            int mismatches = 0;
+            for (String drop : drops) {
+                if (!drop.equals(firstColor)) {
+                    mismatches++;
+                }
+            }
+            heuristic += mismatches;
+        }
+        
+        return heuristic;
+    }
+    private List<Move> getAllValidMoves() {
+        List<Move> moves = new ArrayList<>();
 
         for (int from = 0; from < numTubes; from++) {
             for (int to = 0; to < numTubes; to++) {
-                if (from == to) continue;
-                
-                if (isValidMove(from, to)) {
-                    int score = evaluateMove(from, to, visitedStates);
-                    
-                    if (score > bestScore) {
-                        bestScore = score;
-                        bestMove = new Move(from, to);
-                    }
+                if (from != to && isValidMove(from, to)) {
+                    moves.add(new Move(from, to));
                 }
             }
         }
-        return bestMove;
+
+        moves.sort((a, b) -> {
+            int scoreA = evaluateMoveSimple(a.getFromTube(), a.getToTube());
+            int scoreB = evaluateMoveSimple(b.getFromTube(), b.getToTube());
+            return Integer.compare(scoreB, scoreA);
+        });
+
+        return moves;
     }
 
-    private boolean isValidMove(int from, int to) {
+    private int evaluateMoveSimple(int from, int to) {
         Tube fromTube = tubes.get(from);
         Tube toTube = tubes.get(to);
-
-        if (fromTube.isEmpty()) {
-            return false;
+        
+        if (fromTube.isEmpty() || toTube.isFull()) {
+            return Integer.MIN_VALUE;
         }
-        if (toTube.isFull()) {
-            return false;
-        }
-
-        String topColor = fromTube.getTopColor();
-        if (toTube.isEmpty()) {
-            return true;
-        }
-
-        return toTube.getTopColor().equals(topColor);
-    }
-
-    private int evaluateMove(int from, int to, Set<String> visitedStates) {
-        Tube fromTube = tubes.get(from);
-        Tube toTube = tubes.get(to);
+        
         int score = 0;
 
-        LiquidSortSolver testSolver = this.copy();
-        boolean moveSuccess = testSolver.makeMove(from, to);
-        if (!moveSuccess) {
-            return Integer.MIN_VALUE;
-        }
-        
-        String newStateKey = testSolver.getStateKey();
-        
-        if (visitedStates.contains(newStateKey)) {
-            return Integer.MIN_VALUE;
-        }
         boolean fromWasSorted = fromTube.isSorted();
         boolean toWasSorted = toTube.isSorted();
         boolean toWasEmpty = toTube.isEmpty();
@@ -116,7 +140,9 @@ public class LiquidSortSolver {
         int topColorCount = fromTube.getTopColorCount();
         int freeSpace = toTube.getFreeSpace();
         int canPour = Math.min(topColorCount, freeSpace);
+        LiquidSortSolver testSolver = this.copy();
 
+        testSolver.makeMove(from, to);
         Tube newFromTube = testSolver.getTubes().get(from);
         Tube newToTube = testSolver.getTubes().get(to);
 
@@ -124,33 +150,47 @@ public class LiquidSortSolver {
         boolean toNowSorted = newToTube.isSorted();
 
         if (toWasEmpty && fromNowSorted) {
-            score += 1000;
-        }
-        if (toWasEmpty && canPour == fromTube.getSize()) {
-            score += 500;
+            score += 10000;
         }
         if (!toWasSorted && toNowSorted) {
-            score += 800;
+            score += 8000;
         }
         if (fromWasSorted && !fromNowSorted) {
-            score -= 1000;
+            score -= 5000;
         }
         if (toWasSorted && !toNowSorted) {
-            score -= 1000;
+            score -= 5000;
         }
 
         if (toTube.getTopColor() != null && toTube.getTopColor().equals(fromTube.getTopColor())) {
             int combinedCount = canPour + toTube.getTopColorCount();
             if (combinedCount == tubeCapacity) {
-                score += 600;
+                score += 6000;
             } else {
-                score += combinedCount * 10;
+                score += combinedCount * 50;
             }
         }
-
-        score += canPour * 5;
-
+        if (toWasEmpty) {
+            score += 200;
+        }
+        score += canPour * 20;
         return score;
+    }
+
+    private boolean isValidMove(int from, int to) {
+        Tube fromTube = tubes.get(from);
+        Tube toTube = tubes.get(to);
+        if (fromTube.isEmpty()) {
+            return false;
+        }
+        if (toTube.isFull()) {
+            return false;
+        }
+        String topColor = fromTube.getTopColor();
+        if (toTube.isEmpty()) {
+            return true;
+        }
+        return toTube.getTopColor().equals(topColor);
     }
 
     private String getStateKey() {
