@@ -1,13 +1,16 @@
 package org.example.liquidsort;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class LiquidSortSolver {
     private List<Tube> tubes;
     private List<Move> solution;
     private final int numTubes;
     private final int tubeCapacity;
+    private static final int MAX_MOVES = 10000;
 
     public LiquidSortSolver(int[][] initialState) {
         this.numTubes = initialState.length;
@@ -30,7 +33,136 @@ public class LiquidSortSolver {
 
     public List<Move> solve() {
         solution.clear();
+        
+        if (isSolved()) {
+            return solution;
+        }
+        int movesCount = 0;
+        Set<String> visitedStates = new HashSet<>();
+        
+        while (!isSolved() && movesCount < MAX_MOVES) {
+            Move bestMove = findBestMove(visitedStates);
+            if (bestMove == null) {
+                break;
+            }
+            makeMove(bestMove.getFromTube(), bestMove.getToTube());
+            movesCount++;
+            String stateKey = getStateKey();
+            visitedStates.add(stateKey);
+        }
         return solution;
+    }
+
+    private Move findBestMove(Set<String> visitedStates) {
+        Move bestMove = null;
+        int bestScore = Integer.MIN_VALUE;
+
+        for (int from = 0; from < numTubes; from++) {
+            for (int to = 0; to < numTubes; to++) {
+                if (from == to) continue;
+                
+                if (isValidMove(from, to)) {
+                    int score = evaluateMove(from, to, visitedStates);
+                    
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestMove = new Move(from, to);
+                    }
+                }
+            }
+        }
+        return bestMove;
+    }
+
+    private boolean isValidMove(int from, int to) {
+        Tube fromTube = tubes.get(from);
+        Tube toTube = tubes.get(to);
+
+        if (fromTube.isEmpty()) {
+            return false;
+        }
+        if (toTube.isFull()) {
+            return false;
+        }
+
+        Integer topColor = fromTube.getTopColor();
+        if (toTube.isEmpty()) {
+            return true;
+        }
+
+        return toTube.getTopColor().equals(topColor);
+    }
+
+    private int evaluateMove(int from, int to, Set<String> visitedStates) {
+        Tube fromTube = tubes.get(from);
+        Tube toTube = tubes.get(to);
+        int score = 0;
+
+        LiquidSortSolver testSolver = this.copy();
+        boolean moveSuccess = testSolver.makeMove(from, to);
+        if (!moveSuccess) {
+            return Integer.MIN_VALUE;
+        }
+        
+        String newStateKey = testSolver.getStateKey();
+        
+        if (visitedStates.contains(newStateKey)) {
+            return Integer.MIN_VALUE;
+        }
+        boolean fromWasSorted = fromTube.isSorted();
+        boolean toWasSorted = toTube.isSorted();
+        boolean toWasEmpty = toTube.isEmpty();
+
+        int topColorCount = fromTube.getTopColorCount();
+        int freeSpace = toTube.getFreeSpace();
+        int canPour = Math.min(topColorCount, freeSpace);
+
+        Tube newFromTube = testSolver.getTubes().get(from);
+        Tube newToTube = testSolver.getTubes().get(to);
+
+        boolean fromNowSorted = newFromTube.isSorted();
+        boolean toNowSorted = newToTube.isSorted();
+
+        if (toWasEmpty && fromNowSorted) {
+            score += 1000;
+        }
+        if (toWasEmpty && canPour == fromTube.getSize()) {
+            score += 500;
+        }
+        if (!toWasSorted && toNowSorted) {
+            score += 800;
+        }
+        if (fromWasSorted && !fromNowSorted) {
+            score -= 1000;
+        }
+        if (toWasSorted && !toNowSorted) {
+            score -= 1000;
+        }
+
+        if (toTube.getTopColor() != null && toTube.getTopColor().equals(fromTube.getTopColor())) {
+            int combinedCount = canPour + toTube.getTopColorCount();
+            if (combinedCount == tubeCapacity) {
+                score += 600;
+            } else {
+                score += combinedCount * 10;
+            }
+        }
+
+        score += canPour * 5;
+
+        return score;
+    }
+
+    private String getStateKey() {
+        StringBuilder sb = new StringBuilder();
+        for (Tube tube : tubes) {
+            sb.append("[");
+            for (Integer drop : tube.getDrops()) {
+                sb.append(drop).append(",");
+            }
+            sb.append("]");
+        }
+        return sb.toString();
     }
 
 
@@ -88,4 +220,3 @@ public class LiquidSortSolver {
         return copy;
     }
 }
-
