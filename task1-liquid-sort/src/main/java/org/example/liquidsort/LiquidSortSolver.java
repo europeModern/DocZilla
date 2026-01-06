@@ -12,17 +12,17 @@ public class LiquidSortSolver {
     private final int tubeCapacity;
     private static final int MAX_MOVES = 10000;
 
-    public LiquidSortSolver(int[][] initialState) {
+    public LiquidSortSolver(String[][] initialState) {
         this.numTubes = initialState.length;
         this.tubeCapacity = initialState[0].length;
         this.tubes = new ArrayList<>();
         this.solution = new ArrayList<>();
 
 
-        for (int[] tubeData : initialState) {
+        for (String[] tubeData : initialState) {
             Tube tube = new Tube(tubeCapacity);
-            for (int color : tubeData) {
-                if (color != 0) { // 0 - пусто
+            for (String color : tubeData) {
+                if (color != null && !color.equals("0") && !color.trim().isEmpty()) { // 0 - пусто
                     tube.addDrop(color);
                 }
             }
@@ -85,7 +85,7 @@ public class LiquidSortSolver {
             return false;
         }
 
-        Integer topColor = fromTube.getTopColor();
+        String topColor = fromTube.getTopColor();
         if (toTube.isEmpty()) {
             return true;
         }
@@ -157,7 +157,7 @@ public class LiquidSortSolver {
         StringBuilder sb = new StringBuilder();
         for (Tube tube : tubes) {
             sb.append("[");
-            for (Integer drop : tube.getDrops()) {
+            for (String drop : tube.getDrops()) {
                 sb.append(drop).append(",");
             }
             sb.append("]");
@@ -204,14 +204,14 @@ public class LiquidSortSolver {
     }
 
     public LiquidSortSolver copy() {
-        int[][] state = new int[numTubes][tubeCapacity];
+        String[][] state = new String[numTubes][tubeCapacity];
         for (int i = 0; i < numTubes; i++) {
-            List<Integer> drops = tubes.get(i).getDrops();
+            List<String> drops = tubes.get(i).getDrops();
             for (int j = 0; j < tubeCapacity; j++) {
                 if (j < drops.size()) {
                     state[i][j] = drops.get(j);
                 } else {
-                    state[i][j] = 0;
+                    state[i][j] = "0";
                 }
             }
         }

@@ -5,14 +5,14 @@ import java.util.List;
 
 public class Tube {
     private final int capacity;
-    private final List<Integer> drops;
+    private final List<String> drops;
 
     public Tube(int capacity) {
         this.capacity = capacity;
         this.drops = new ArrayList<>();
     }
 
-    public Tube(int capacity, List<Integer> initialDrops) {
+    public Tube(int capacity, List<String> initialDrops) {
         this.capacity = capacity;
         this.drops = new ArrayList<>(initialDrops);
     }
@@ -37,7 +37,7 @@ public class Tube {
         return capacity - drops.size();
     }
 
-    public Integer getTopColor() {
+    public String getTopColor() {
         if (drops.isEmpty()) {
             return null;
         }
@@ -48,7 +48,7 @@ public class Tube {
         if (drops.isEmpty()) {
             return 0;
         }
-        Integer topColor = getTopColor();
+        String topColor = getTopColor();
         int count = 0;
         for (int i = drops.size() - 1; i >= 0; i--) {
             if (drops.get(i).equals(topColor)) {
@@ -60,14 +60,14 @@ public class Tube {
         return count;
     }
 
-    public void addDrop(Integer color) {
+    public void addDrop(String color) {
         if (isFull()) {
             throw new IllegalStateException("Пробирка заполнена");
         }
         drops.add(color);
     }
 
-    public Integer removeTopDrop() {
+    public String removeTopDrop() {
         if (isEmpty()) {
             throw new IllegalStateException("Пробирка пуста");
         }
@@ -82,7 +82,7 @@ public class Tube {
             return 0;
         }
 
-        Integer topColor = getTopColor();
+        String topColor = getTopColor();
         if (target.isEmpty() || target.getTopColor().equals(topColor)) {
             int availableSpace = target.getFreeSpace();
             int topColorCount = getTopColorCount();
@@ -102,8 +102,8 @@ public class Tube {
         if (isEmpty() || drops.size() == 1) {
             return true;
         }
-        Integer firstColor = drops.get(0);
-        for (Integer color : drops) {
+        String firstColor = drops.get(0);
+        for (String color : drops) {
             if (!color.equals(firstColor)) {
                 return false;
             }
@@ -116,7 +116,7 @@ public class Tube {
     }
 
 
-    public List<Integer> getDrops() {
+    public List<String> getDrops() {
         return new ArrayList<>(drops);
     }
 
@@ -125,4 +125,3 @@ public class Tube {
         return "Tube{" + drops + "}";
     }
 }
-
