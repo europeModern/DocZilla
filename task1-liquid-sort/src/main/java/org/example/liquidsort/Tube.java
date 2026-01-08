@@ -12,11 +12,6 @@ public class Tube {
         this.drops = new ArrayList<>();
     }
 
-    public Tube(int capacity, List<String> initialDrops) {
-        this.capacity = capacity;
-        this.drops = new ArrayList<>(initialDrops);
-    }
-
     public boolean isEmpty() {
         return drops.isEmpty();
     }

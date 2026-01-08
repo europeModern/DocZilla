@@ -238,11 +238,6 @@ public class LiquidSortSolver {
         return tubes;
     }
 
-
-    public List<Move> getSolution() {
-        return new ArrayList<>(solution);
-    }
-
     public LiquidSortSolver copy() {
         String[][] state = new String[numTubes][tubeCapacity];
         for (int i = 0; i < numTubes; i++) {

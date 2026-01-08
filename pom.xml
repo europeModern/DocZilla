@@ -17,8 +17,8 @@
 
     <modules>
         <module>task1-liquid-sort</module>
-        <!--<module>task2-file-exchange</module>
-        <module>task3-weather</module>-->
+        <module>task2-file-exchange</module>
+        <!--<module>task3-weather</module>-->
     </modules>
 
     <build>
